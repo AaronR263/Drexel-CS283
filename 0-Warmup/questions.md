@@ -15,11 +15,14 @@ Please provide answers to these questions using markdown notation and place them
     - [ ] NO - Not Yet
 
 
-3. Please provide a link to the repository you are using for this class.
+3. Please provide a link to the repository you are using for this class.  
+
 https://github.com/AaronR263/Drexel-CS283
 
-4. Briefly describe what you want to get out of this class.
+4. Briefly describe what you want to get out of this class.  
+
 I want to have a good understanding of what is going on under the hood in computers and operating systems so that I can be more capable at solving problems. I also want to become more proficient with linux.
 
-5. Briefly describe any concerns you might be having with being successful in this class (if any).
+5. Briefly describe any concerns you might be having with being successful in this class (if any).  
+
 I currently have no concerns with being successful in this class.
