@@ -13,31 +13,46 @@ int  setup_buff(char *, char *, int);
 //prototypes for functions to handle required functionality
 int  count_words(char *, int, int);
 //add additional prototypes here
-
+int is_white_space(char);
 
 int setup_buff(char *buff, char *user_str, int len){
     
     int usr_str_len = 0;
-    int space_cntr = 0;
+    int is_space = 0;
     int filled_buff_size = 0;
  
+    // skip leading spaces
+    while (is_white_space(*user_str)) {
+        user_str++;
+    }
+
     for ( ; *user_str != '\0'; user_str++){
-        if (*user_str == ' ' || *user_str == 9) {
-            space_cntr++;
-        } else {
-            if (space_cntr > 0) {
+
+        if (usr_str_len > BUFFER_SZ) {
+            return -1;
+        }
+
+        if (is_white_space(*user_str)) {
+            is_space = 1;
+        } 
+        else {
+            /* If there was whitespace in input, 
+               put one space in buffer */
+            if (is_space) {
                 *buff = ' ';
                 buff++;
-                space_cntr = 0;
+                is_space = 0;
             }
             *buff = *user_str;
             filled_buff_size++;
             buff++;
         }
+
         usr_str_len++;
     }
    
-    for (int i = filled_buff_size; i < 50; i++) {
+    // Fill remaining buff space with dots
+    for (int i = filled_buff_size; i < BUFFER_SZ; i++) {
         *buff = '.';
         buff++;
     }
@@ -59,10 +74,17 @@ void usage(char *exename){
 }
 
 int count_words(char *buff, int len, int str_len){
-    //YOU MUST IMPLEMENT
+    
+    // int is_space = 0;
+    // int wc = 0;
+
+    // for 
     return 0;
 }
 
+int is_white_space(char input){
+    return input == ' ' || input == '\t' || input == '\n';
+}
 //ADD OTHER HELPER FUNCTIONS HERE FOR OTHER REQUIRED PROGRAM OPTIONS
 
 int main(int argc, char *argv[]){
@@ -114,11 +136,9 @@ int main(int argc, char *argv[]){
         exit(2);
     }
 
-    printf("\nBUFF: ");
-    for (int b = 0; b < 50; b++) {
-        printf("%c", buff[b]);
-    }
-    printf("\n");
+    // Print buff, temporary
+    print_buff(buff, BUFFER_SZ);
+
     switch (opt){
         case 'c':
             rc = count_words(buff, BUFFER_SZ, user_str_len);  //you need to implement
