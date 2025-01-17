@@ -30,11 +30,11 @@ int setup_buff(char *buff, char *user_str, int len){
             is_space = 1;
         } 
         else {
-            if ((filled_buff_size + 1) > len) {
+            // Check if buffer is full
+            if (filled_buff_size + 1 > len) {
                 return -1;
             }
-            
-            // If whitespace in input, put a space in the buffer
+            // If whitespace was in input, put one space in buffer
             if (is_space) {
                 *buff = ' ';
                 buff++;
