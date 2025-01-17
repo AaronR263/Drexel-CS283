@@ -26,15 +26,15 @@ int setup_buff(char *buff, char *user_str, int len){
     }
 
     for ( ; *user_str != '\0'; user_str++){
-        if (filled_buff_size > len) {
-            return -1;
-        }
-
         if (is_white_space(*user_str)) {
             is_space = 1;
-        } else {
-            /* If there was whitespace in input, 
-               put one space in buffer */
+        } 
+        else {
+            if ((filled_buff_size + 1) > len) {
+                return -1;
+            }
+            
+            // If whitespace in input, put a space in the buffer
             if (is_space) {
                 *buff = ' ';
                 buff++;
