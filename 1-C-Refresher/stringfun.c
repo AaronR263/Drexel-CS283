@@ -16,7 +16,6 @@ int  count_words(char *, int, int);
 int is_white_space(char);
 
 int setup_buff(char *buff, char *user_str, int len){
-    
     int usr_str_len = 0;
     int is_space = 0;
     int filled_buff_size = 0;
@@ -27,15 +26,13 @@ int setup_buff(char *buff, char *user_str, int len){
     }
 
     for ( ; *user_str != '\0'; user_str++){
-
-        if (usr_str_len > BUFFER_SZ) {
+        if (filled_buff_size > len) {
             return -1;
         }
 
         if (is_white_space(*user_str)) {
             is_space = 1;
-        } 
-        else {
+        } else {
             /* If there was whitespace in input, 
                put one space in buffer */
             if (is_space) {
@@ -47,10 +44,9 @@ int setup_buff(char *buff, char *user_str, int len){
             filled_buff_size++;
             buff++;
         }
-
         usr_str_len++;
     }
-   
+
     // Fill remaining buff space with dots
     for (int i = filled_buff_size; i < BUFFER_SZ; i++) {
         *buff = '.';
@@ -62,9 +58,11 @@ int setup_buff(char *buff, char *user_str, int len){
 
 void print_buff(char *buff, int len){
     printf("Buffer:  ");
+    putchar('[');
     for (int i=0; i<len; i++){
         putchar(*(buff+i));
     }
+    putchar(']');
     putchar('\n');
 }
 
@@ -74,12 +72,12 @@ void usage(char *exename){
 }
 
 int count_words(char *buff, int len, int str_len){
-    
-    // int is_space = 0;
-    // int wc = 0;
-
-    // for 
-    return 0;
+    int space_cnt = 0;
+    for (int i = 0; i < len; i++) {
+        if (buff[i] == ' ')
+            space_cnt++;
+    }
+    return space_cnt + 1;
 }
 
 int is_white_space(char input){
@@ -120,7 +118,6 @@ int main(int argc, char *argv[]){
     }
 
     input_string = argv[2]; //capture the user input string
-    printf("Inputted string: %s\n", input_string); // for testing
     
     // #3 Allocate space for the buffer using malloc and
     //    handle error if malloc fails by exiting with a 
@@ -135,9 +132,6 @@ int main(int argc, char *argv[]){
         printf("Error setting up buffer, error = %d", user_str_len);
         exit(2);
     }
-
-    // Print buff, temporary
-    print_buff(buff, BUFFER_SZ);
 
     switch (opt){
         case 'c':
