@@ -30,7 +30,7 @@ int setup_buff(char *buff, char *user_str, int len){
             is_space = 1;
         } 
         else {
-            // Check if buffer is full
+            // Check if buffer is full  // SHOULD MOVE THIS ABOVE TO BE CLEANER TEST IT
             if (filled_buff_size + 1 > len) {
                 return -1;
             }
@@ -73,9 +73,11 @@ void usage(char *exename){
 
 int count_words(char *buff, int len, int str_len){
     int space_cnt = 0;
+
     for (int i = 0; i < len; i++) {
-        if (buff[i] == ' ')
+        if (*buff == ' ')
             space_cnt++;
+        buff++;
     }
     return space_cnt + 1;
 }
