@@ -38,6 +38,7 @@ int setup_buff(char *buff, char *user_str, int len){
             if (is_space) {
                 *buff = ' ';
                 buff++;
+                filled_buff_size++;
                 is_space = 0;
             }
             *buff = *user_str;
@@ -53,7 +54,7 @@ int setup_buff(char *buff, char *user_str, int len){
         buff++;
     }
   
-    return usr_str_len;  
+    return filled_buff_size;  
 }
 
 void print_buff(char *buff, int len){
@@ -80,6 +81,49 @@ int count_words(char *buff, int len, int str_len){
         buff++;
     }
     return space_cnt + 1;
+}
+
+int reverse_buffer(char* buff, int len, int usr_str_len) {
+    char temp;
+    char* buff_start = buff;
+    char* buff_end = buff + usr_str_len - 1;
+   
+    while ( buff_start < buff_end) {
+        temp = *buff_start;
+        *buff_start = *buff_end;
+        *buff_end = temp;
+
+        buff_start++;
+        buff_end--;
+    }
+
+    return 0;
+}
+
+int word_print(char* buff, int len, int usr_str_len) {
+    int word_cntr = 0;
+    int char_cntr = 0;
+    char* end = buff + usr_str_len - 1;
+
+    printf("Word Print\n----------\n");
+
+    while (buff <= end + 1) {
+        printf("%d. ", word_cntr + 1);
+
+        while (*buff != ' ' && buff <= end + 1) {
+            putchar(*buff);
+            buff++;
+            char_cntr++;
+        }
+
+        printf("(%d)\n",char_cntr);
+
+        char_cntr = 0;
+        word_cntr++;
+
+        if (buff <= end + 1)
+            buff++;
+    }
 }
 
 int is_white_space(char input){
@@ -145,6 +189,13 @@ int main(int argc, char *argv[]){
             printf("Word Count: %d\n", rc);
             break;
 
+        case 'r':
+            rc = reverse_buffer(buff, BUFFER_SZ, user_str_len);
+            break;
+
+        case 'w':
+            rc = word_print(buff, BUFFER_SZ, user_str_len);
+            break;
         //TODO:  #5 Implement the other cases for 'r' and 'w' by extending
         //       the case statement options
         default:
