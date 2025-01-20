@@ -121,22 +121,21 @@ int word_print(char* buff, int len, int usr_str_len) {
 
     printf("Word Print\n----------\n");
 
-    while (buff <= end + 1) {
-        printf("%d. ", word_cntr + 1);
+    while (buff <= end) {
+        word_cntr++;
+        printf("%d. ", word_cntr);
 
-        while (*buff != ' ' && buff <= end + 1) {
+        //Increments pointer to end of word
+        while (*buff != ' ' && buff <= end) {
             putchar(*buff);
             buff++;
             char_cntr++;
         }
 
-        printf("(%d)\n",char_cntr);
-
+        printf("(%d)\n", char_cntr);
         char_cntr = 0;
-        word_cntr++;
 
-        if (buff <= end + 1)
-            buff++;
+        buff++;
     }
 
     return 0;
