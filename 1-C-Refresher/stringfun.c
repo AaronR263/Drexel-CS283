@@ -75,7 +75,11 @@ void usage(char *exename){
 int count_words(char *buff, int len, int str_len){
     int space_cnt = 0;
 
-    for (int i = 0; i < len; i++) {
+    if (str_len > len) {
+        return -1;
+    }
+
+    for (int i = 0; i < str_len - 1; i++) {
         if (*buff == ' ')
             space_cnt++;
         buff++;
@@ -84,6 +88,11 @@ int count_words(char *buff, int len, int str_len){
 }
 
 int reverse_buffer(char* buff, int len, int usr_str_len) {
+
+    if (usr_str_len > len) {
+        return -1;
+    }
+
     char temp;
     char* buff_start = buff;
     char* buff_end = buff + usr_str_len - 1;
@@ -101,6 +110,11 @@ int reverse_buffer(char* buff, int len, int usr_str_len) {
 }
 
 int word_print(char* buff, int len, int usr_str_len) {
+
+    if (usr_str_len > len) {
+        return -1;
+    }
+
     int word_cntr = 0;
     int char_cntr = 0;
     char* end = buff + usr_str_len - 1;
@@ -124,6 +138,8 @@ int word_print(char* buff, int len, int usr_str_len) {
         if (buff <= end + 1)
             buff++;
     }
+
+    return 0;
 }
 
 int is_white_space(char input){
@@ -140,7 +156,11 @@ int main(int argc, char *argv[]){
     int  user_str_len;      //length of user supplied string
 
     //TODO:  #1. WHY IS THIS SAFE, aka what if arv[1] does not exist?
-    //      PLACE A COMMENT BLOCK HERE EXPLAINING
+    //      If argv[1] does not exist, then argc would be less than two.
+    //      The first consition of the or statement is evaluated first.
+    //      Because the first condition is true, and because of the truth table
+    //      of OR, the second condition would not need to be evaluated to 
+    //      evaluate the OR statement, so the error would never occur. 
     if ((argc < 2) || (*argv[1] != '-')){
         usage(argv[0]);
         exit(1);
@@ -157,7 +177,7 @@ int main(int argc, char *argv[]){
     //WE NOW WILL HANDLE THE REQUIRED OPERATIONS
 
     //TODO:  #2 Document the purpose of the if statement below
-    //      PLACE A COMMENT BLOCK HERE EXPLAINING
+    //      Checks if all required command line arguments are supplied
     if (argc < 3){
         usage(argv[0]);
         exit(1);
@@ -181,7 +201,7 @@ int main(int argc, char *argv[]){
 
     switch (opt){
         case 'c':
-            rc = count_words(buff, BUFFER_SZ, user_str_len);  //you need to implement
+            rc = count_words(buff, BUFFER_SZ, user_str_len); 
             if (rc < 0){
                 printf("Error counting words, rc = %d", rc);
                 exit(2);
@@ -189,15 +209,24 @@ int main(int argc, char *argv[]){
             printf("Word Count: %d\n", rc);
             break;
 
+        //TODO:  #5 Implement the other cases for 'r' and 'w' by extending
+        //       the case statement options
         case 'r':
             rc = reverse_buffer(buff, BUFFER_SZ, user_str_len);
+            if (rc < 0){
+                printf("Error counting words, rc = %d", rc);
+                exit(2);
+            }
             break;
 
         case 'w':
             rc = word_print(buff, BUFFER_SZ, user_str_len);
+            if (rc < 0){
+                printf("Error counting words, rc = %d", rc);
+                exit(2);
+            }
             break;
-        //TODO:  #5 Implement the other cases for 'r' and 'w' by extending
-        //       the case statement options
+
         default:
             usage(argv[0]);
             exit(1);
@@ -205,8 +234,10 @@ int main(int argc, char *argv[]){
 
     //TODO:  #6 Dont forget to free your buffer before exiting
     print_buff(buff,BUFFER_SZ);
+    free(buff);
     exit(0);
 }
+
 
 //TODO:  #7  Notice all of the helper functions provided in the 
 //          starter take both the buffer as well as the length.  Why
@@ -214,4 +245,9 @@ int main(int argc, char *argv[]){
 //          is a good practice, after all we know from main() that 
 //          the buff variable will have exactly 50 bytes?
 //  
-//          PLACE YOUR ANSWER HERE
+//          This function may be used in other contexts than just in this file
+//          or program. It is wise to build functions with modularity in mind
+//          to accomodate for future changes in design.
+//          Also, the name of the functions don't specify that they only
+//          use the main buffer in this program. Maybe you want to use the functions 
+//          with a different buffer that has a different length. 
