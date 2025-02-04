@@ -70,7 +70,7 @@ int get_student(int fd, int id, student_t *s)
 
     student_t fstudent;
     rc = read(fd, &fstudent, STUDENT_RECORD_SIZE);
-    lseek(fd, 0, SEEK_SET); // Seek to begining of file
+
     if (rc == -1) {
         return ERR_DB_FILE;
     }
@@ -110,6 +110,7 @@ int get_student(int fd, int id, student_t *s)
  */
 int add_student(int fd, int id, char *fname, char *lname, int gpa)
 {
+    // Move pointer to location of student with id passed in
     int offset = id * STUDENT_RECORD_SIZE;
     int rc = lseek(fd, offset, SEEK_SET);
     if (rc == -1) {
@@ -117,7 +118,7 @@ int add_student(int fd, int id, char *fname, char *lname, int gpa)
         return ERR_DB_FILE;
     }
 
-    //Check if student already exists
+    // Read any existing data into fstudent 
     student_t fstudent = {0};
     int bytes_read = read(fd, &fstudent, STUDENT_RECORD_SIZE);
     if (bytes_read == -1) {
@@ -125,14 +126,15 @@ int add_student(int fd, int id, char *fname, char *lname, int gpa)
         return ERR_DB_FILE;
     }
 
+    // Check if row is empty
     student_t empty_student = {0};
     int byte_diff = memcmp(&fstudent, &empty_student, STUDENT_RECORD_SIZE);
     if (byte_diff != 0) {
-        printf(M_ERR_DB_ADD_DUP);
+        printf(M_ERR_DB_ADD_DUP, id);
         return ERR_DB_OP;
     }
         
-    
+    // Add new student to databse
     student_t new_student;
     new_student.id = id;
     new_student.gpa = gpa;
@@ -144,7 +146,6 @@ int add_student(int fd, int id, char *fname, char *lname, int gpa)
         printf(M_ERR_DB_WRITE);
         return ERR_DB_FILE;
     }
-    lseek(fd, 0, SEEK_SET); // seek to begining of file
  
     printf(M_STD_ADDED, id);
     return NO_ERROR;
@@ -174,6 +175,7 @@ int add_student(int fd, int id, char *fname, char *lname, int gpa)
  */
 int del_student(int fd, int id)
 {
+    // copy student data to fstudent
     student_t fstudent;
     int rc = get_student(fd, id, &fstudent);
     if (rc == ERR_DB_FILE) {
@@ -182,16 +184,16 @@ int del_student(int fd, int id)
     }
 
     if (rc == SRCH_NOT_FOUND) {
-        printf(M_STD_NOT_FND_MSG);
+        printf(M_STD_NOT_FND_MSG, id);
         return ERR_DB_OP;
     }
     
     int offset = id * STUDENT_RECORD_SIZE;
     lseek(fd, offset, SEEK_SET);
 
+    // Overwrite student with empty student
     student_t empty_student = {0};
     rc = write(fd, &empty_student, STUDENT_RECORD_SIZE);
-    lseek(fd, 0, SEEK_SET); // seek to begining of file
 
     if (rc == -1) {
         printf(M_ERR_DB_WRITE);
@@ -357,8 +359,16 @@ int print_db(int fd)
  */
 void print_student(student_t *s)
 {
-    printf("Student id: %d, name: %s", s->id, s->fname);
-    //Make it what its supposed to print out
+    if (s == NULL || s->id == 0) {
+        printf(M_ERR_STD_PRINT);
+    }
+    
+    float calculated_gpa_from_s = s->gpa / 100.0;
+    printf(STUDENT_PRINT_HDR_STRING, "ID",
+                    "FIRST NAME", "LAST_NAME", "GPA");
+ 
+    printf(STUDENT_PRINT_FMT_STRING, s->id, s->fname,
+                    s->lname, calculated_gpa_from_s);
 }
 
 /*
