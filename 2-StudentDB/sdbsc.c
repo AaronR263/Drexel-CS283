@@ -293,28 +293,26 @@ int count_db_records(int fd)
  */
 int print_db(int fd)
 {
-
     student_t student;
+    student_t empty_student = {0};
     float calculated_gpa_from_student;
-   
 
     int real_row_cntr = 0;
     int bytes_read = 0;
-    student_t empty_student = {0};
+    // Read until EOF
     while ((bytes_read = read(fd, &student, STUDENT_RECORD_SIZE)) != 0) {
 
+        // Only print if not empty
         int cmp = memcmp(&student, &empty_student, STUDENT_RECORD_SIZE);
-
         if (cmp != 0) {
             real_row_cntr++;
             if (real_row_cntr == 1) {
-                 printf(STUDENT_PRINT_HDR_STRING, "ID",
-                   "FIRST_NAME", "LAST_NAME", "GPA");
+                 printf(STUDENT_PRINT_HDR_STRING, "ID", "FIRST_NAME", "LAST_NAME", "GPA");
             }
 
             calculated_gpa_from_student = student.gpa / 100.0;
-            printf(STUDENT_PRINT_FMT_STRING, student.id, student.fname,
-                     student.lname, calculated_gpa_from_student);
+            printf(STUDENT_PRINT_FMT_STRING, student.id, student.fname, 
+                    student.lname, calculated_gpa_from_student);
         }
     }
 
