@@ -39,7 +39,7 @@ Please answer the following questions and submit in your repo for the second ass
     ```
     Can you think of any reason why the above implementation would be a **very bad idea** using the C programming language?  Specifically, address why the above code introduces a subtle bug that could be hard to identify at runtime? 
 
-    > **ANSWER:** The variable student is not allocated from the heap. This means that after the function is finished running, the memory used to store student will be freed. This could be hard to identify at runtime because the memory may not be overwritten, so the program may perform as expected. However it may suddenly stop working if the memeory is overwritten. 
+    > **ANSWER:** The variable student is not allocated from the heap. This means that after the function is finished running, the memory used to store student will be freed. This could be hard to identify at runtime because the memory may not be overwritten, so the program may perform as expected. However it may suddenly stop working if the memory is overwritten. 
 
 3. Another way the `get_student(...)` function could be implemented is as follows:
 
@@ -102,11 +102,11 @@ Please answer the following questions and submit in your repo for the second ass
 
     - Please explain why the file size reported by the `ls` command was 128 bytes after adding student with ID=1, 256 after adding student with ID=3, and 4160 after adding the student with ID=64? 
 
-        > **ANSWER:** _start here_
+        > **ANSWER:** With an id of one, only 128 bytes of data is needed to store the file. Each record take up 64bytes, and there is a 64 byte space in the begining of the file. When there is a student with id 3, the begining of the file is 64 bytes, and there are 3 other spaces totaling 256 bytes. This same logic applies to the id of 64.
 
     -   Why did the total storage used on the disk remain unchanged when we added the student with ID=1, ID=3, and ID=63, but increased from 4K to 8K when we added the student with ID=64? 
 
-        > **ANSWER:** _start here_
+        > **ANSWER:** This is because in linux, files are stored as blocks of memory. 4K is commonly the smallest block of memory in linux. With an id of 3 added, the file only takes up 256 bytes. This easily fits into a 4k block. However, when the file exceeds 4k, another block of memory needs to be added in order to have enough space to store the file. 
 
     - Now lets add one more student with a large student ID number  and see what happens:
 
@@ -119,4 +119,4 @@ Please answer the following questions and submit in your repo for the second ass
         ```
         We see from above adding a student with a very large student ID (ID=99999) increased the file size to 6400000 as shown by `ls` but the raw storage only increased to 12K as reported by `du`.  Can provide some insight into why this happened?
 
-        > **ANSWER:**  _start here_
+        > **ANSWER:**  Linux compressed the file before storing it. Linux may have observed that there are many repeated 0s in the file. This can be easily compressed. Linux marks the holes in the file metadata, and tries to store only relevant data on disk.
