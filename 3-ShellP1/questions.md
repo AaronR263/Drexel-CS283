@@ -9,7 +9,7 @@
 
 3. In `dshlib.c`, the function `build_cmd_list(`)` must trim leading and trailing spaces from each command before storing it. Why is this necessary? If we didn't trim spaces, what kind of issues might arise when executing commands in our shell?
 
-    > **Answer**: This is necesary because users may accidentally put spaces before or after. This will make it difficult to comapre inputted commands to the known commands. It would also make it very difficult to seperate commands from arguments since they are eperated by spaces. 
+    > **Answer**: This is necesary because users may accidentally put spaces before or after. This will make it difficult to comapre inputted commands to the known commands. It would also make it very difficult to seperate commands from arguments since they are seperated by spaces. 
 
 4. For this question you need to do some research on STDIN, STDOUT, and STDERR in Linux. We've learned this week that shells are "robust brokers of input and output". Google _"linux shell stdin stdout stderr explained"_ to get started.
 
@@ -27,4 +27,4 @@
 
 - How should our custom shell handle errors from commands that fail? Consider cases where a command outputs both STDOUT and STDERR. Should we provide a way to merge them, and if so, how?
 
-    > **Answer**: We can make both stderr and stdout default to printing to the screen. However, there should also be a way to redirect these to another file or process. 
+    > **Answer**: We can make both stderr and stdout default to printing to the screen. However, there should also be a way to redirect these to another file or process. This enables 'merging' of stdin and stdout while also allowing for them to be handled independently. 
