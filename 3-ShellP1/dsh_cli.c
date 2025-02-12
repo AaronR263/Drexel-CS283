@@ -61,7 +61,7 @@ void print_cmd_list(command_list_t *clist)
  */
 int main()
 {
-    char cmd_buff[CMD_MAX * SH_CMD_MAX]; // is this enough room?
+    char cmd_buff[ARG_MAX]; // is this enough room?
     int rc = 0;
     command_list_t clist;
 
