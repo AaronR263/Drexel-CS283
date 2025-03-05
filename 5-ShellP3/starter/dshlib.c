@@ -29,6 +29,8 @@ void parse_cmd_into_argv(cmd_buff_t *cmd_buff) {
     
     int i = 0;
     int at_end = 0;
+    cmd_buff->out_file = NULL;
+    cmd_buff->in_file = NULL;
 
     //skip leading spaces
     while (cmd_buff->_cmd_buffer[i] == SPACE_CHAR) {
@@ -41,21 +43,56 @@ void parse_cmd_into_argv(cmd_buff_t *cmd_buff) {
     while (!at_end && cmd_buff->argc <= 8) {
         
         int in_quote = 0;
+        int in_redirect_out = 0;
+        int in_redirect_in = 0;
+
         if (cmd_buff->_cmd_buffer[i] == '"') {
             in_quote = 1;
             i++; 
-        }
-         
-        // set argument start in cmd_buff
-        cmd_buff->argv[cmd_buff->argc] = &(cmd_buff->_cmd_buffer[i]);
-        cmd_buff->argc++;
-
-        while (!in_quote && cmd_buff->_cmd_buffer[i] != SPACE_CHAR && cmd_buff->_cmd_buffer[i] != '\0') {
+        } 
+        else if (cmd_buff->_cmd_buffer[i] == '>') {
+            in_redirect_out = 1;
             i++;
-            if (cmd_buff->_cmd_buffer[i] == '"')
-                in_quote = 1;
+        }
+        else if (cmd_buff->_cmd_buffer[i] == '<') {
+            in_redirect_in = 1;
+            i++;
+        }
+
+        // set argument start in cmd_buff
+        if (!in_redirect_in && !in_redirect_out) {
+            cmd_buff->argv[cmd_buff->argc] = &(cmd_buff->_cmd_buffer[i]);
+            cmd_buff->argc++;
         }
         
+        while (!in_quote && cmd_buff->_cmd_buffer[i] != SPACE_CHAR && !in_redirect_out && !in_redirect_in && cmd_buff->_cmd_buffer[i] != '\0') {
+            i++;
+            if (cmd_buff->_cmd_buffer[i] == '"')
+                in_quote = 1;  
+        }
+        
+        if (in_redirect_in || in_redirect_out) {
+            //skip spaces
+            while (cmd_buff->_cmd_buffer[i] == SPACE_CHAR) {
+                i++;
+            }
+
+            if (in_redirect_in) {
+                // set direct_in ponter from buffer
+                cmd_buff->in_file = &cmd_buff->_cmd_buffer[i];
+                
+            } else if (in_redirect_out) { 
+                cmd_buff->out_file = &cmd_buff->_cmd_buffer[i];
+            }
+            
+            // read until end of word. /0 is set below. This should also accomodate quotes though, need to refactor to account for this
+            while (cmd_buff->_cmd_buffer[i] != SPACE_CHAR && cmd_buff->_cmd_buffer[i] != '\0') {
+                i++;
+            }
+            in_redirect_in = 0;
+            in_redirect_out = 0;
+        }
+
         // ignores spaces
         while (in_quote && cmd_buff->_cmd_buffer[i] != '\0') {
             i++;
@@ -80,8 +117,28 @@ void parse_cmd_into_argv(cmd_buff_t *cmd_buff) {
     cmd_buff->argv[cmd_buff->argc] = NULL;
 }
 
+void dup_redirect_in(cmd_buff_t *cmd_buff) {
+
+    if (cmd_buff->in_file != NULL) {
+        int out_fd = open(cmd_buff->in_file, O_RDONLY, 0644);
+        dup2(out_fd, STDIN_FILENO);
+    }
+}
+
+void dup_redirect_out(cmd_buff_t *cmd_buff) {
+ 
+    if (cmd_buff->out_file != NULL) {
+        int in_fd = open(cmd_buff->out_file, O_WRONLY | O_CREAT, 0644);
+        dup2(in_fd, STDOUT_FILENO);
+    }
+}
 
 int execute_built_in_commands(cmd_buff_t *cmd_buff) {
+
+    // redirect here if necesarry.
+    dup_redirect_in(cmd_buff);
+    dup_redirect_out(cmd_buff);
+
     // built in commadns
     if (strcmp(cmd_buff->argv[0], EXIT_CMD) == 0) {
         exit(0);
@@ -111,13 +168,18 @@ void execute_external_cmds(cmd_buff_t *cmd_buff) {
         //The child will now exec
         int exec_rc;
 
-        printf("argv[0]: '%s'\n", cmd_buff->argv[0]);
-        printf("argv[1]: %p\n", (void*)cmd_buff->argv[1]);
+        // redirect here if necesarry.
+        dup_redirect_in(cmd_buff);
+        dup_redirect_out(cmd_buff);
+
+        // printf("argv[0]: '%s'\n", cmd_buff->argv[0]);
+        // printf("argv[1]: %p\n", (void*)cmd_buff->argv[1]);
         exec_rc = execvp(cmd_buff->argv[0], cmd_buff->argv);
         if (exec_rc < 0){
             perror("fork error");
             exit(42);   
         }
+
     } else {
         //This will be where the parent picks up
         wait(&c_result);
@@ -260,8 +322,9 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
             return OK;
     
         execute_external_cmds(&command_list.commands[0]);
+        
     } else {
-
+        
         // set up pipe loop and everything
         int pipes[command_list.num - 1][2];
         pid_t pids[command_list.num];
@@ -298,11 +361,22 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
                 if (i > 0)
                     dup2(pipes[i - 1][0], STDIN_FILENO);
                 
+                // redirects stdin for 1st cmd if necesary
+                if (i == 0) 
+                    dup_redirect_in(&command_list.commands[i]);
+
+                //redirects stdout for last command if necesary
+                if (i == command_list.num - 1) 
+                    dup_redirect_out(&command_list.commands[i]);
+
                 for (int j = 0; j < command_list.num - 1; j++) {
                     close(pipes[j][0]);
                     close(pipes[j][1]);
                 }
 
+                // here we check for redirects. If its the first command can use < to take in input
+                // if is the last command can use > to redirect output. 
+                // I think you should just ignore it if its not in the first or last. (maybe you can do both but later problem)
                  // Execute command
                 execvp(command_list.commands[i].argv[0], command_list.commands[i].argv);
                 perror("execvp");
@@ -322,7 +396,19 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
         }
     }
 
- 
+    // testing for redirection
+    // open the file and get its file descriptor
+    // for redirecting to a file make the current stdut also refer to the file
+    // for redirecting a fie into stdin
+
+
+    // Redirect to file:
+
+    // int fd = fopen("outs", "w");
+    // dup2(fd, STDOUT_FILENO);
+
+    
+    
     switch (rc) {
         case OK:
             //print_cmd_list(&clist);

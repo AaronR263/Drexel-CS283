@@ -1,0 +1,13 @@
+argv[0]: 'ls'
+argv[1]: (nil)
+bab.txt
+bats
+cat.txt
+dsh
+dsh_cli.c
+dshlib.c
+dshlib.h
+hello.txt
+hhh.txt
+jjj.txt
+makefile
