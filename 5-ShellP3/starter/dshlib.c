@@ -111,6 +111,8 @@ void execute_external_cmds(cmd_buff_t *cmd_buff) {
         //The child will now exec
         int exec_rc;
 
+        printf("argv[0]: '%s'\n", cmd_buff->argv[0]);
+        printf("argv[1]: %p\n", (void*)cmd_buff->argv[1]);
         exec_rc = execvp(cmd_buff->argv[0], cmd_buff->argv);
         if (exec_rc < 0){
             perror("fork error");
@@ -124,6 +126,7 @@ void execute_external_cmds(cmd_buff_t *cmd_buff) {
         //printf("[p] The child exit status is %d\n", WEXITSTATUS(c_result));
     }
 }
+
 
 int build_cmd_list(char *cmd_line, command_list_t *clist)
 {
@@ -141,31 +144,29 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
         
         cmd_line = skip_spaces(cmd_line);
 
-        cmd_buff_t cmd_buff = {0}; //switch to malloc?
-        cmd_buff.argc = 0;
+        cmd_buff_t *cmd_buff = malloc(sizeof(cmd_buff_t)); //switch to malloc?
+        cmd_buff->argc = 0;
 
         // Read command into cmd_buff._cmd_buffer
         int i = 0;
         while (*cmd_line != PIPE_CHAR && *cmd_line != '\0') {
             if (i == (EXE_MAX - 1))
                 return ERR_CMD_OR_ARGS_TOO_BIG;
-            cmd_buff._cmd_buffer[i++] = *cmd_line++;
+            cmd_buff->_cmd_buffer[i++] = *cmd_line++;
         }
-        cmd_buff._cmd_buffer[i] = '\0';
+        cmd_buff->_cmd_buffer[i] = '\0';
 
-       
         // parse command into argv array
-        parse_cmd_into_argv(&cmd_buff);
-        memcpy(&clist->commands[clist->num], &cmd_buff, sizeof(cmd_buff));
+        parse_cmd_into_argv(cmd_buff);
+        memcpy(&clist->commands[clist->num], cmd_buff, sizeof(cmd_buff_t)); // argvs will point to old buffer
         clist->num += 1;
 
         // Check if cmd_line ended
         if (*cmd_line == '\0') 
             break;
-        else {
+        else 
             cmd_line++;
-        } 
-
+        
     }
   
     return OK;
@@ -234,30 +235,94 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
     //remove the trailing \n from cmd_buff
     cmd_line_buff[strcspn(cmd_line_buff, "\n")] = '\0';
     
-
     // Check if buff is empty
     if (cmd_line_buff[0] == '\0') {
         printf(CMD_WARN_NO_CMD);
         return WARN_NO_CMDS;
     } 
     
-    // now we need to build a command list
+    // build a command list
     command_list_t command_list = { 0 };
     if (build_cmd_list(cmd_line_buff, &command_list) == ERR_TOO_MANY_COMMANDS) {
         printf(CMD_ERR_PIPE_LIMIT, CMD_MAX);
         return ERR_TOO_MANY_COMMANDS;
     }
 
-    // For testing
-    for (int i = 0; i < command_list.num; i++) {
-        printf("\n%s %s %d", command_list.commands[i]._cmd_buffer, command_list.commands[i]._cmd_buffer + 3, command_list.commands[i].argc);
+    // //For testing
+    // for (int i = 0; i < command_list.num; i++) {
+    //     printf("\n%s %s %d", command_list.commands[i].argv[0], command_list.commands[i].argv[1], command_list.commands[i].argc);
+    // }
+    //printf("DEBUG: About to print command\n");
+    //printf("\n%s %s", command_list.commands[0].argv[0], command_list.commands[0].argv[1]);
+
+    if (command_list.num == 1) {
+        if (( rc = execute_built_in_commands(&command_list.commands[0]) ) == OK)
+            return OK;
+    
+        execute_external_cmds(&command_list.commands[0]);
+    } else {
+
+        // set up pipe loop and everything
+        int pipes[command_list.num - 1][2];
+        pid_t pids[command_list.num];
+
+        // create all pipes
+        for (int i = 0; i < command_list.num - 1; i++) {
+            if (pipe(pipes[i]) == -1) {
+                perror("pipe");
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        // now we have all pipes, so we need to fork and dup
+        for (int i = 0; i < command_list.num; i++) {
+           
+            // create a process for each command
+            pids[i] = fork();
+            if (pids[i] == -1) {
+                perror("fork");
+                exit(EXIT_FAILURE);
+            }
+            
+            if (pids[i] == 0) {
+                // map stdout to the write side of pipe
+                // for all except last pipe
+                if (i < command_list.num -1)
+                    dup2(pipes[i][1], STDOUT_FILENO);
+
+            
+                // maps stdin of current process to read side of 
+                // the pipe for the previous process. 
+                // aka mapping previous processes stdout to current 
+                // proc stdin
+                if (i > 0)
+                    dup2(pipes[i - 1][0], STDIN_FILENO);
+                
+                for (int j = 0; j < command_list.num - 1; j++) {
+                    close(pipes[j][0]);
+                    close(pipes[j][1]);
+                }
+
+                 // Execute command
+                execvp(command_list.commands[i].argv[0], command_list.commands[i].argv);
+                perror("execvp");
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        // close pipes for parent
+        for (int i = 0; i < command_list.num - 1; i++) {
+            close(pipes[i][0]);
+            close(pipes[i][1]);
+        }
+
+        // wait for children before continuing
+        for (int i = 0; i < command_list.num; i++) {
+            waitpid(pids[i], NULL, 0);
+        }
     }
 
-    // if (execute_built_in_commands(&cmd_buff) == OK)
-    //     return OK;
-    
-    // execute_external_cmds(&cmd_buff);
-    
+ 
     switch (rc) {
         case OK:
             //print_cmd_list(&clist);
@@ -272,7 +337,7 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
             break;
     }
 
-
+    // STILL NEED TO FREE cmd_buffs
     // to past test cases, wont be necesarry when loop is fully implemented
     printf("%s", SH_PROMPT);
 
