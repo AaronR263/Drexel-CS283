@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include<unistd.h> 
 #include "dshlib.h"
 
+// move to lib file probably
 void print_cmd_list(command_list_t *clist) 
 {
     printf(CMD_OK_HEADER, clist->num);
@@ -77,6 +78,14 @@ int execute_commands(command_list_t *clist) {
         //temporary implementation
         if (strcmp(cmd.exe, "dragon") == 0) {
             print_rle_data(dragon_data);
+            return 0;
+        }
+
+        if (strcmp(cmd.exe, "cd") == 0) {
+            if (cmd.args[0] != '\0') {
+                printf("\nArgs:%s\n", cmd.args);
+                chdir(cmd.args);
+            }
             return 0;
         }
     }
@@ -164,6 +173,7 @@ int main()
         }  
 
         execute_commands(&clist);
+ 
     }
 
     //printf(M_NOT_IMPL);
