@@ -1,9 +1,0 @@
-argv[0]: 'ls'
-argv[1]: (nil)
-bats
-dsh
-dsh_cli.c
-dshlib.c
-dshlib.h
-hello.txt
-makefile

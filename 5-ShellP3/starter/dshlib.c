@@ -25,6 +25,7 @@ int count_pipes(char* cmd_line)
     return num_pipes;
 }
 
+// clean up 
 void parse_cmd_into_argv(cmd_buff_t *cmd_buff) {
     
     int i = 0;
@@ -118,7 +119,6 @@ void parse_cmd_into_argv(cmd_buff_t *cmd_buff) {
 }
 
 void dup_redirect_in(cmd_buff_t *cmd_buff) {
-
     if (cmd_buff->in_file != NULL) {
         int out_fd = open(cmd_buff->in_file, O_RDONLY, 0644);
         dup2(out_fd, STDIN_FILENO);
@@ -126,7 +126,6 @@ void dup_redirect_in(cmd_buff_t *cmd_buff) {
 }
 
 void dup_redirect_out(cmd_buff_t *cmd_buff) {
- 
     if (cmd_buff->out_file != NULL) {
         int in_fd = open(cmd_buff->out_file, O_WRONLY | O_CREAT, 0644);
         dup2(in_fd, STDOUT_FILENO);
@@ -183,8 +182,6 @@ void execute_external_cmds(cmd_buff_t *cmd_buff) {
     } else {
         //This will be where the parent picks up
         wait(&c_result);
-        //we can use a macro in the runtime library to extract
-        //the status code from what wait_returns
         //printf("[p] The child exit status is %d\n", WEXITSTATUS(c_result));
     }
 }
@@ -192,7 +189,6 @@ void execute_external_cmds(cmd_buff_t *cmd_buff) {
 
 int build_cmd_list(char *cmd_line, command_list_t *clist)
 {
-    
     clist->num = 0;
 
     // Check if amt of commands exceeds CMD_MAX
@@ -206,7 +202,7 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
         
         cmd_line = skip_spaces(cmd_line);
 
-        cmd_buff_t *cmd_buff = malloc(sizeof(cmd_buff_t)); //switch to malloc?
+        cmd_buff_t *cmd_buff = malloc(sizeof(cmd_buff_t)); // memory leak here, will fix
         cmd_buff->argc = 0;
 
         // Read command into cmd_buff._cmd_buffer
@@ -310,13 +306,6 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
         return ERR_TOO_MANY_COMMANDS;
     }
 
-    // //For testing
-    // for (int i = 0; i < command_list.num; i++) {
-    //     printf("\n%s %s %d", command_list.commands[i].argv[0], command_list.commands[i].argv[1], command_list.commands[i].argc);
-    // }
-    //printf("DEBUG: About to print command\n");
-    //printf("\n%s %s", command_list.commands[0].argv[0], command_list.commands[0].argv[1]);
-
     if (command_list.num == 1) {
         if (( rc = execute_built_in_commands(&command_list.commands[0]) ) == OK)
             return OK;
@@ -324,7 +313,7 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
         execute_external_cmds(&command_list.commands[0]);
         
     } else {
-        
+        // make its own function
         // set up pipe loop and everything
         int pipes[command_list.num - 1][2];
         pid_t pids[command_list.num];
@@ -396,19 +385,6 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
         }
     }
 
-    // testing for redirection
-    // open the file and get its file descriptor
-    // for redirecting to a file make the current stdut also refer to the file
-    // for redirecting a fie into stdin
-
-
-    // Redirect to file:
-
-    // int fd = fopen("outs", "w");
-    // dup2(fd, STDOUT_FILENO);
-
-    
-    
     switch (rc) {
         case OK:
             //print_cmd_list(&clist);
@@ -424,6 +400,7 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
     }
 
     // STILL NEED TO FREE cmd_buffs
+    
     // to past test cases, wont be necesarry when loop is fully implemented
     printf("%s", SH_PROMPT);
 
