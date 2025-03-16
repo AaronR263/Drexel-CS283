@@ -14,13 +14,3 @@ EOF
     [ "$status" -eq 0 ]
 }
 
-@test "Example: check ls runs without errors in client" {
-    run ./dsh -c <<EOF                
-ls
-EOF
-
-    # Assertions
-    [ ]
-}
-
-
