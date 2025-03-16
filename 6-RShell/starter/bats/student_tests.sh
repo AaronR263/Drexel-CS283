@@ -4,6 +4,7 @@
 # 
 # Create your unit tests suit in this file
 
+
 @test "Example: check ls runs without errors" {
     run ./dsh <<EOF                
 ls
@@ -12,3 +13,14 @@ EOF
     # Assertions
     [ "$status" -eq 0 ]
 }
+
+@test "Example: check ls runs without errors in client" {
+    run ./dsh -c <<EOF                
+ls
+EOF
+
+    # Assertions
+    [ ]
+}
+
+

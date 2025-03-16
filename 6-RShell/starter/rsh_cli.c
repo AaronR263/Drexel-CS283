@@ -124,21 +124,24 @@ int exec_remote_cmd_loop(char *address, int port)
         // fgets reads input from stdin and stores it in buffer
         // It stops when it hits a newline or reaches BUFFER_SIZE-1 characters
         if (fgets(cmd_buff, RDSH_COMM_BUFF_SZ, stdin) != NULL) {
-            printf("You entered: %s", cmd_buff);
+            //printf("You entered: %s", cmd_buff);
         } else {
             printf("Error reading input\n");
         }
 
         cmd_buff[strcspn(cmd_buff, "\n")] = '\0';
          
+        
         // TODO send() over cli_socket
-        printf("about to send: %s\n", cmd_buff);
+        //printf("about to send: %s\n", cmd_buff);
         ret = send(cli_socket, cmd_buff, strlen(cmd_buff) + 1, 0); //plus 1 for '\0'        
         if (ret == -1) {
             perror("header write errors");
             exit(EXIT_FAILURE);
         }
         
+        if (strcmp(cmd_buff, EXIT_CMD) == 0 || strcmp(cmd_buff, "stop-server") == 0)
+            break;
         memset(rsp_buff, 0, RDSH_COMM_BUFF_SZ);
         // TODO recv all the results
         // loop until ends with EOF
@@ -150,12 +153,12 @@ int exec_remote_cmd_loop(char *address, int port)
                 exit(EXIT_FAILURE);
             }
 
-            printf("RECV FROM SERVER -> %.*s \n", (int)recv_bytes, rsp_buff);
+            printf("%.*s", (int)recv_bytes, rsp_buff);
             is_eof = (rsp_buff[recv_bytes-1] == RDSH_EOF_CHAR) ? 1 : 0;
 
         }
-        printf("\nEOF revieved\n");
-        //printf("RECV FROM SERVER -> %s\n", rsp_buff);
+        //printf("\n");  might be needed 
+        //printf("\nEOF revieved\n");
             // TODO break on exit command
     }
  

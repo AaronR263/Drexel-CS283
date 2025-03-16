@@ -388,8 +388,9 @@ int process_cli_requests(int svr_socket){
         }
 
         printf("recieved request!\n");
-        //fflush(stdout);
-        exec_client_requests(cli_socket);
+        rc = exec_client_requests(cli_socket);
+        if (rc == STOP_SERVER_SC)
+            break;
     }
 
     stop_server(cli_socket);
@@ -467,8 +468,8 @@ int exec_client_requests(int cli_socket) {
                 printf("read 0 bytes\n");
                 break;
             }
-            printf("recieve data\n", io_buff);
-            printf("iobuff:%.*s \n", (int)recv_bytes, io_buff);
+            //printf("recieve data\n", io_buff);
+            //printf("iobuff:%.*s \n", (int)recv_bytes, io_buff);
     
             is_last_chunk = ((char)io_buff[recv_bytes - 1] == eof_char) ? 1 : 0;
             
@@ -482,7 +483,7 @@ int exec_client_requests(int cli_socket) {
             // guarentees buff is null terminated
             if (is_last_chunk){
                 io_buff[recv_bytes - 1] = '\0'; 
-                printf("last chunk\n");
+                //printf("last chunk\n");
                 break;
             }
             
@@ -515,17 +516,24 @@ int exec_client_requests(int cli_socket) {
             return ERR_TOO_MANY_COMMANDS; // ik will never be reached
         }
 
-        // execute built in commands
-        // if (command_list.num == 1) {
-        //     if (( rc = execute_built_in_commands(&command_list.commands[0]) ) == OK) {
-        //         send_message_string(cli_socket, "changed directories", strlen("changed directories") + 1);
-        //         send_message_eof(cli_socket);
-        //     }
-
-            
-        //     //execute_external_cmds(&command_list.commands[0]);
-        // } 
-        rsh_execute_pipeline(cli_socket, &command_list);
+        // check if built in command, if not pass to pipeline
+        rc = rsh_built_in_cmd(&command_list.commands[0]);
+        if (rc == BI_NOT_BI) {
+            rsh_execute_pipeline(cli_socket, &command_list);
+        } else if (rc == BI_CMD_EXIT){
+            if (close(cli_socket) == -1) {
+                perror("error closing socket");
+                exit(1);
+            }
+            break;
+        } else if (rc == BI_CMD_STOP_SVR) {
+            free(io_buff);
+            free(full_rec_message);
+            return STOP_SERVER_SC;
+        }
+        send_message_eof(cli_socket);
+             
+        
     }   
     
 
@@ -697,11 +705,13 @@ int rsh_execute_pipeline(int cli_sock, command_list_t *clist) {
             // if is the last command can use > to redirect output. 
             // I think you should just ignore it if its not in the first or last. (maybe you can do both but later problem)
              // Execute command
+            dup2(cli_sock, STDERR_FILENO);
             execvp(clist->commands[i].argv[0], clist->commands[i].argv);
             perror("execvp");
             exit(EXIT_FAILURE);
+            
         }
-        // TODO HINT you can dup2(cli_sock with STDIN_FILENO, STDOUT_FILENO, etc.
+    
 
     }
 
@@ -727,7 +737,6 @@ int rsh_execute_pipeline(int cli_sock, command_list_t *clist) {
             exit_code = EXIT_SC;
     }
 
-    send_message_eof(cli_sock);
     return exit_code;
 }
 
@@ -829,6 +838,7 @@ Built_In_Cmds rsh_built_in_cmd(cmd_buff_t *cmd)
         return BI_CMD_RC;
     case BI_CMD_CD:
         chdir(cmd->argv[1]);
+        printf("changed dirctory\n");
         return BI_EXECUTED;
     default:
         return BI_NOT_BI;
